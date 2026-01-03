@@ -1,0 +1,10 @@
+name: duckduckgo-async-search
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      # tooling for packaging/publishing
+      - build>=1.0.0
+      - twine>=5.0.0
