@@ -1,40 +1,48 @@
 # duckduckgo-async-search
-
 A tiny, easy-to-use **async** wrapper around DuckDuckGo search with best-effort fallbacks.
 
 ## Why this exists
 
-The popular `duckduckgo-search` / `DDGS` interface is convenient, but it is effectively
-**synchronous/blocking** (network + parsing happen in the calling thread). In async apps
-(FastAPI, agents, notebooks, concurrent pipelines), that can block the event loop and
-slow down unrelated tasks.
+The popular DuckDuckGo search interfaces (`ddgs` / legacy `duckduckgo-search`)
+are **synchronous/blocking** by design (network + parsing happen in the calling thread).
+In async applications (FastAPI, agents, notebooks, concurrent pipelines), calling them
+directly can block the event loop and slow down unrelated tasks.
 
 This library provides a **non-blocking async API**:
 
 - You call `await DuckDuckGoSearch().top_n_result(...)`
 - Under the hood, blocking SERP calls run in a **background worker thread**
   (via `asyncio.to_thread`) so the main event loop stays responsive
-- Requests can run in parallel with other async tasks
+- Searches can safely run alongside other async tasks
 
 ## Fallback strategy (best-effort reliability)
 
-DuckDuckGo can rate-limit or intermittently fail depending on IP/network conditions.
-To improve reliability, searches use a two-stage approach:
+DuckDuckGo may rate-limit or intermittently fail depending on IP, region,
+or network conditions. To improve reliability, searches use a multi-stage approach:
 
-1) **Primary: `duckduckgo-search` (DDGS) SERP results**
+1) **Primary: DDGS SERP results (`ddgs` / legacy `duckduckgo-search`)**
    - Tries multiple backends (default: `lite`, `html`, `auto`)
    - Retries with exponential backoff + jitter (configurable)
-   - Returns normalized items (title, url, snippet) and a `source` tag like
-     `duckduckgo_search:lite`
+   - Returns normalized items (`title`, `url`, `snippet`) with a `source` tag like
+     `ddgs:lite`
 
-2) **Fallback: DuckDuckGo Instant Answer API (JSON)**
-   - More stable / less likely to rate-limit
-   - Not a full web SERP, but returns useful links from `Results` and `RelatedTopics`
+2) **Secondary: DuckDuckGo HTML SERP fallback**
+   - Fetches and parses the public DuckDuckGo HTML results page
+   - No additional third-party dependencies
+   - Best-effort parsing (may break if DuckDuckGo changes markup)
+   - Returns items with `source="ddg_html_fallback"`
+
+3) **Final fallback: DuckDuckGo Instant Answer API (JSON)**
+   - More stable and less likely to rate-limit
+   - Not a full web SERP, but can return useful links from
+     `Results` and `RelatedTopics`
    - Returns items with `source="instant_answer_api"`
+
+If all strategies fail or return no items, a clear error is raised.
 
 ## Output
 
-`top_n_result()` returns `List[DuckDuckGoResult]` where each item includes:
+`top_n_result()` returns `List[DuckDuckGoResult]`, where each item includes:
 
 - `title: str`
 - `url: str`
