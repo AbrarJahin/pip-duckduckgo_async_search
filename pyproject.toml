@@ -24,7 +24,6 @@ Issues = "https://github.com/AbrarJahin/pip-duckduckgo_async_search/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
-py-modules = ["DuckDuckGoAsyncSearch"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
