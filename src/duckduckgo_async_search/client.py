@@ -9,13 +9,17 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-logger = logging.getLogger(__name__)
-
 try:
-    # Unofficial SERP wrapper (can rate-limit depending on IP/network)
-    from duckduckgo_search import DDGS  # type: ignore
-except Exception:  # pragma: no cover
-    DDGS = None  # fallback still works
+    # New package name
+    from ddgs import DDGS  # type: ignore
+except Exception:
+    try:
+        # Backward-compat (older installs)
+        from duckduckgo_search import DDGS  # type: ignore
+    except Exception:
+        DDGS = None  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -54,9 +58,9 @@ class DuckDuckGoSearch:
         *,
         user_agent: str = DEFAULT_USER_AGENT,
         request_timeout_s: float = 20.0,
-        ddg_backends: Optional[List[str]] = None,
-        ddg_pause_s: float = 1.0,
-        ddg_max_attempts: int = 3,
+        ddg_backends: Optional[List[str]] = None,   # e.g., ["lite", "html", "auto"]
+        ddg_pause_s: float = 1.0,                   # pause between attempts - 2.0 or 3.0
+        ddg_max_attempts: int = 3,                  # total attempts across all backends
         instant_answer_max_bytes: int = 2_000_000,
         debug: bool = False,
     ) -> None:
@@ -74,21 +78,28 @@ class DuckDuckGoSearch:
     async def top_n_result(self, query: str, n: int = 5) -> List[DuckDuckGoResult]:
         """Return the top N result items (title, url, snippet, source)."""
         query = (query or "").strip()
-        if not query:
-            return []
-
+        if not query: return []
         n = max(1, int(n))
+        serp_err: Optional[Exception] = None
 
-        # 1) Unofficial SERP wrapper (best when it works)
+        # 1) SERP wrapper
         if DDGS is not None:
             try:
                 return await asyncio.to_thread(self._search_via_duckduckgo_search_sync, query, n)
             except Exception as e:
-                if self.debug:
-                    logger.exception("duckduckgo_search failed; falling back. Error: %s", e)
+                serp_err = e
+                # IMPORTANT: don't be silent
+                logger.warning("DDGS SERP failed; falling back to Instant Answer API. Error: %s", e)
 
-        # 2) Instant Answer API (more reliable)
-        return await self._search_via_instant_answer_api(query, n)
+        # 2) Instant Answer fallback
+        results = await self._search_via_instant_answer_api(query, n)
+
+        # If fallback returns nothing, raise something actionable
+        if not results and serp_err is not None:
+            raise RuntimeError(
+                f"Search failed (DDGS error) and Instant Answer returned 0 items. DDGS error: {serp_err}"
+            )
+        return results
 
     # -----------------------------
     # Internal helpers
