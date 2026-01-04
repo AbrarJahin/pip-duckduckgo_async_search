@@ -93,8 +93,16 @@ if __name__ == "__main__":
 from duckduckgo_async_search import DuckDuckGoSearch
 
 async def main():
-    client = DuckDuckGoSearch()
-    items = await client.top_n_result("World's largest beach", n=10)
+    client = DuckDuckGoSearch(
+        request_timeout_s = 20.0,
+        ddg_backends = None,   # e.g., ["lite", "html", "auto"]
+        ddg_pause_s = 1.0,                   # pause between attempts - 2.0 or 3.0
+        ddg_max_attempts = 3,                  # total attempts across all backends
+        instant_answer_max_bytes = 2_000_000,
+        html_fallback_max_bytes = 2_500_000,
+        debug = False
+    )
+    items = await client.top_n_result("World's longest beach", n=10)
     for item in items:
         print(item.title, item.url, item.source)
 
