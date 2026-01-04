@@ -10,7 +10,9 @@ Async DuckDuckGo search helper:
 pip install duckduckgo-async-search
 ```
 
-## Usage (No Config Needed)
+## Usage
+
+No config/API is needed to use this library.
 
 ### Simple Import
 
@@ -30,16 +32,19 @@ asyncio.run(main())
 ### Standard Import
 
 ```python
-import asyncio
+!pip install duckduckgo-async-search
+
 from duckduckgo_async_search import DuckDuckGoSearch
 
 async def main():
     client = DuckDuckGoSearch()
     items = await client.top_n_result("Capital of Bangladesh", n=5)
-    for it in items:
-        print(it.title, it.url)
 
-asyncio.run(main())
+    for it in items:
+        print(it.title, it.url, "|", it.source)
+        print("--------------------------")
+
+await main()
 ```
 
 ## Notes

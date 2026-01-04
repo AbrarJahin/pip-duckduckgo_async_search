@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "duckduckgo-async-search"
-version = "0.0.1"
+version = "0.0.2"
 description = "Async DuckDuckGo search helper with SERP wrapper + Instant Answer API fallback."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,6 +23,7 @@ Issues = "https://github.com/AbrarJahin/pip-duckduckgo_async_search/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+py-modules = ["DuckDuckGoAsyncSearch"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
