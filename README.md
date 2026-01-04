@@ -1,8 +1,45 @@
-# duckduckgo-async-search - PIP Package
+# duckduckgo-async-search
 
-Async DuckDuckGo search helper:
-- Tries `duckduckgo-search` (DDGS SERP wrapper) first
-- Falls back to DuckDuckGo Instant Answer API JSON if SERP is rate-limited or unavailable
+A tiny, easy-to-use **async** wrapper around DuckDuckGo search with best-effort fallbacks.
+
+## Why this exists
+
+The popular `duckduckgo-search` / `DDGS` interface is convenient, but it is effectively
+**synchronous/blocking** (network + parsing happen in the calling thread). In async apps
+(FastAPI, agents, notebooks, concurrent pipelines), that can block the event loop and
+slow down unrelated tasks.
+
+This library provides a **non-blocking async API**:
+
+- You call `await DuckDuckGoSearch().top_n_result(...)`
+- Under the hood, blocking SERP calls run in a **background worker thread**
+  (via `asyncio.to_thread`) so the main event loop stays responsive
+- Requests can run in parallel with other async tasks
+
+## Fallback strategy (best-effort reliability)
+
+DuckDuckGo can rate-limit or intermittently fail depending on IP/network conditions.
+To improve reliability, searches use a two-stage approach:
+
+1) **Primary: `duckduckgo-search` (DDGS) SERP results**
+   - Tries multiple backends (default: `lite`, `html`, `auto`)
+   - Retries with exponential backoff + jitter (configurable)
+   - Returns normalized items (title, url, snippet) and a `source` tag like
+     `duckduckgo_search:lite`
+
+2) **Fallback: DuckDuckGo Instant Answer API (JSON)**
+   - More stable / less likely to rate-limit
+   - Not a full web SERP, but returns useful links from `Results` and `RelatedTopics`
+   - Returns items with `source="instant_answer_api"`
+
+## Output
+
+`top_n_result()` returns `List[DuckDuckGoResult]` where each item includes:
+
+- `title: str`
+- `url: str`
+- `snippet: str` (when available)
+- `source: str` (which backend produced the item)
 
 ## Install
 
@@ -10,39 +47,56 @@ Async DuckDuckGo search helper:
 pip install duckduckgo-async-search
 ```
 
+Colab:
+
+```bash
+!pip install duckduckgo-async-search
+```
+
 ## Usage
 
-No config/API is needed to use this library.
+### Jupyter / Colab
 
-### Simple Import
+```python
+from duckduckgo_async_search import top_n_result
+
+async def main():
+    items = await top_n_result("World's largest mangrove forest", n=5)
+    for item in items:
+        print(item.title)
+        print(item.url)
+        print(item.snippet)
+        print(item.source)
+        print("-" * 30)
+
+await main()
+```
+
+### Python script (.py)
 
 ```python
 import asyncio
-from DuckDuckGoAsyncSearch import top_n_result
+from duckduckgo_async_search import top_n_result
 
 async def main():
-    query = "Capital of Bangladesh"
-    items = await top_n_result(query, n=5)
-    for it in items:
-        print(it.title, it.url)
+    items = await top_n_result("World's largest mangrove forest", n=5)
+    for item in items:
+        print(item.title, item.url, item.source)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-### Standard Import
+### Class usage
 
 ```python
-!pip install duckduckgo-async-search
-
 from duckduckgo_async_search import DuckDuckGoSearch
 
 async def main():
     client = DuckDuckGoSearch()
-    items = await client.top_n_result("Capital of Bangladesh", n=5)
-
-    for it in items:
-        print(it.title, it.url, "|", it.source)
-        print("--------------------------")
+    items = await client.top_n_result("World's largest beach", n=10)
+    for item in items:
+        print(item.title, item.url, item.source)
 
 await main()
 ```
@@ -50,29 +104,13 @@ await main()
 ## Notes
 
 - SERP wrappers can be rate-limited depending on your IP/network.
-- Instant Answer API is more reliable but does not always reflect “top web results”.
+- Instant Answer API is more reliable but may not reflect “top web results”.
 
-## Contribution
+## License
 
-Contributions are welcome and encouraged 🎉  
+MIT License — free for personal and commercial use, modification, and distribution.
 
-The source code is publicly available here:  
-👉 https://github.com/AbrarJahin/pip-duckduckgo_async_search
+## Contributing
 
-### How to contribute
-1. Fork the repository to your own GitHub account  
-2. Create a new branch for your changes  
-3. Make your changes and commit them with clear messages  
-4. Push the branch to your fork  
-5. Open a Pull Request (PR) to this repository  
-
-All PRs will be reviewed and tested. If everything looks good, the changes will be merged.
-
-### What you can contribute
-- Bug fixes
-- Performance or reliability improvements
-- Documentation improvements
-- New features or enhancements
-- Test coverage
-
-By contributing, you agree that your contributions will be licensed under the same open-source license as this project.
+Source:
+https://github.com/AbrarJahin/pip-duckduckgo_async_search
