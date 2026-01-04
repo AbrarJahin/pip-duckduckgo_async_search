@@ -53,6 +53,24 @@ Colab:
 !pip install duckduckgo-async-search
 ```
 
+## Requirements
+
+- **Python**: 3.9 or newer
+- **Dependencies**:
+  - `httpx>=0.27`
+  - `ddgs>=9.0.0`
+
+> **Note:**
+> This library relies on the unofficial `ddgs` package to fetch DuckDuckGo search results.  
+
+> DuckDuckGo may apply rate limits or blocking, so occasional retries or empty results are expected.
+
+> Dependencies are installed automatically when using:
+
+```bash
+pip install duckduckgo-async-search
+```
+
 ## Usage
 
 ### Jupyter / Colab

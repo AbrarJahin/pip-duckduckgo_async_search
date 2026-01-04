@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "duckduckgo-async-search"
-version = "0.0.4"
+version = "1.0.0"
 description = "Async DuckDuckGo search helper with SERP wrapper + Instant Answer API fallback."
 readme = "README.md"
 requires-python = ">=3.9"
