@@ -40,8 +40,8 @@ subprocess.check_call(cmd)"
 	@echo ------------------------------------------------------------
 	@echo Upgrading pip + installing package editable (-e .)
 	@echo ------------------------------------------------------------
-	@$(RUN) python -m pip install -U pip
-	@$(RUN) python -m pip install -e .
+	@$(RUN) python -m pip install --no-user -U pip
+	@$(RUN) python -m pip install --no-user -e .
 	@echo ------------------------------------------------------------
 	@echo Done.
 	@echo Next: run 'make activate' to see how to activate in your shell.
